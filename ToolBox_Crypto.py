@@ -10,6 +10,8 @@ from tkinter import filedialog
 from Crypto.Cipher import DES
 from Crypto.Random import get_random_bytes
 from passlib.hash import pbkdf2_sha256
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
 
 def show_frame(frame):
@@ -94,8 +96,8 @@ def update_options(*args):
         optionmenu_2.pack_forget()  
     if var.get() == "Symétrique":
         optionmenu_2 = customtkinter.CTkOptionMenu(master=utility_frame, values=["AES", "DES"])
-    elif var.get() == "Asymétrique":
-        optionmenu_2 = customtkinter.CTkOptionMenu(master=utility_frame, values=["RSA", "RH"])
+    elif var.get() == "Hybride / Asymétrique":
+        optionmenu_2 = customtkinter.CTkOptionMenu(master=utility_frame, values=["RSA / AES", "RSA"])
     if optionmenu_2 is not None:
         optionmenu_2.pack(pady=5, side=tk.TOP)
 
@@ -338,6 +340,185 @@ def dechiffrement_aes():
         else:
             print("Aucun dossier n'a été sélectionné.")
 
+
+def generate_rsa_keys():
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    public_key = key.publickey().export_key()
+
+    with open('private.pem', 'wb') as private_file:
+        private_file.write(private_key)
+
+    with open('public.pem', 'wb') as public_file:
+        public_file.write(public_key)
+
+def load_rsa_keys():
+    private_key_path = 'private.pem'
+    public_key_path = 'public.pem'
+
+    try:
+        with open(private_key_path, 'rb') as private_file:
+            private_key = RSA.import_key(private_file.read())
+
+        with open(public_key_path, 'rb') as public_file:
+            public_key = RSA.import_key(public_file.read())
+
+        return private_key, public_key
+    except FileNotFoundError:
+        print("Les clés RSA n'ont pas été trouvées.")
+        return None, None
+
+def generate_symmetric_key():
+    return Fernet.generate_key()
+
+def encrypt_file_symmetric(file_path, key):
+    cipher = Fernet(key)
+
+    with open(file_path, 'rb') as file:
+        original = file.read()
+
+    encrypted = cipher.encrypt(original)
+
+    with open(file_path, 'wb') as enc_file:
+        enc_file.write(encrypted)
+
+def decrypt_file_symmetric(file_path, key):
+    cipher = Fernet(key)
+
+    with open(file_path, 'rb') as encrypted_file:
+        enc_data = encrypted_file.read()
+
+    decrypted = cipher.decrypt(enc_data)
+
+    with open(file_path, 'wb') as decrypted_file:
+        decrypted_file.write(decrypted)
+
+def delete_unencrypted_symmetric_key():
+    unencrypted_symmetric_key_path = 'fernet_key_folder.key'
+    try:
+        os.remove(unencrypted_symmetric_key_path)
+    except FileNotFoundError:
+        pass
+
+def hybrid_encryption():
+    root = tk.Tk()
+    root.withdraw()
+
+    folder_path = filedialog.askdirectory()
+    private_key, public_key = load_rsa_keys()
+
+    if private_key is None or public_key is None:
+        print("Les clés RSA sont nécessaires pour le chiffrement. Génération")
+        generate_rsa_keys()
+
+    symmetric_key = generate_symmetric_key()
+
+    cipher_rsa = PKCS1_OAEP.new(public_key)
+    encrypted_symmetric_key = cipher_rsa.encrypt(symmetric_key)
+
+    with open('encrypted_symmetric_key.bin', 'wb') as key_file:
+        key_file.write(encrypted_symmetric_key)
+    
+
+    if folder_path:
+        files = os.listdir(folder_path)
+        for file in files:
+            file_path = os.path.join(folder_path, file)
+            if os.path.isfile(file_path):
+                encrypt_file_symmetric(file_path, symmetric_key)
+                print(f"{file_path} a été chiffré en hybride.")
+    
+    delete_unencrypted_symmetric_key()
+
+def hybrid_decryption():
+    root = tk.Tk()
+    root.withdraw()
+
+    folder_path = filedialog.askdirectory()
+    private_key, _ = load_rsa_keys()
+
+    if private_key is None:
+        print("La clé privée RSA est nécessaire pour le déchiffrement.")
+        return
+
+    with open('encrypted_symmetric_key.bin', 'rb') as key_file:
+        encrypted_symmetric_key = key_file.read()
+
+    cipher_rsa = PKCS1_OAEP.new(private_key)
+    symmetric_key = cipher_rsa.decrypt(encrypted_symmetric_key)
+
+    if folder_path:
+        files = os.listdir(folder_path)
+        for file in files:
+            file_path = os.path.join(folder_path, file)
+            if os.path.isfile(file_path):
+                decrypt_file_symmetric(file_path, symmetric_key)
+                print(f"{file_path} a été déchiffré en hybride.")
+    
+    delete_unencrypted_symmetric_key()
+
+
+def chiffrement_rsa():
+    root = tk.Tk()
+    root.withdraw()
+
+    file_path = filedialog.askopenfilename(filetypes=[("Fichiers texte", "*.txt")])
+
+
+    private_key, public_key = load_rsa_keys()
+
+    if private_key is None or public_key is None:
+        print("Les clés RSA sont nécessaires pour le chiffrement. Génération")
+        generate_rsa_keys
+
+    cipher_rsa = PKCS1_OAEP.new(public_key)
+
+    if file_path and os.path.isfile(file_path):
+        with open(file_path, 'rb') as file:
+            original = file.read()
+
+        encrypted = cipher_rsa.encrypt(original)
+
+        with open(file_path, 'wb') as enc_file:
+            enc_file.write(encrypted)
+
+        print(f"{file_path} a été chiffré avec RSA.")
+    else:
+        print("Aucun fichier n'a été sélectionné ou le fichier sélectionné n'existe pas.")
+    
+    delete_unencrypted_symmetric_key()
+
+
+def dechiffrement_rsa():
+    root = tk.Tk()
+    root.withdraw()
+
+    file_path = filedialog.askopenfilename(filetypes=[("Fichiers texte", "*.txt")])
+
+    private_key, _ = load_rsa_keys()
+
+    if private_key is None:
+        print("La clé privée RSA est nécessaire pour le déchiffrement.")
+        return
+
+    cipher_rsa = PKCS1_OAEP.new(private_key)
+
+    if file_path and os.path.isfile(file_path):
+        with open(file_path, 'rb') as encrypted_file:
+            enc_data = encrypted_file.read()
+
+        decrypted = cipher_rsa.decrypt(enc_data)
+
+        with open(file_path, 'wb') as decrypted_file:
+            decrypted_file.write(decrypted)
+
+        print(f"{file_path} a été déchiffré avec RSA.")
+    else:
+        print("Aucun fichier n'a été sélectionné ou le fichier sélectionné n'existe pas.")
+    
+    delete_unencrypted_symmetric_key()
+
+
 def chiffrement():
     selected_algorithm = var.get()
 
@@ -346,11 +527,11 @@ def chiffrement():
             chiffrement_aes()
         elif optionmenu_2.get() == "DES":
             chiffrement_des()
-    elif selected_algorithm == "Asymétrique":
-        if optionmenu_2.get() == "RSA":
-            print("RTCYVUIJ")
-        elif optionmenu_2.get() == "RH":
-            print("Chiffrement RH")
+    elif selected_algorithm == "Hybride / Asymétrique":
+        if optionmenu_2.get() == "RSA / AES":
+            hybrid_encryption()
+        elif optionmenu_2.get() == "RSA":
+            chiffrement_rsa()
 
 def dechiffrement():
     selected_algorithm = var.get()
@@ -360,11 +541,12 @@ def dechiffrement():
             dechiffrement_aes()
         elif optionmenu_2.get() == "DES":
             dechiffrement_des()
-    elif selected_algorithm == "Asymétrique":
-        if optionmenu_2.get() == "RSA":
-            print("dechiffrement")
-        elif optionmenu_2.get() == "RH":
-            print("Déchiffrement RH")
+    elif selected_algorithm == "Hybride / Asymétrique":
+        if optionmenu_2.get() == "RSA / AES":
+            hybrid_decryption()
+        elif optionmenu_2.get() == "RSA":
+            dechiffrement_rsa()
+
 
 initial_frame = customtkinter.CTkFrame(master=root)
 initial_frame.grid(row=0, column=0, sticky='news')
@@ -470,7 +652,7 @@ utility_frame.grid(row=0, column=0, sticky='news')
 var = tk.StringVar(master=utility_frame)
 var.trace('w', update_options)
 
-optionmenu_1 = customtkinter.CTkOptionMenu(master=utility_frame, values=["Symétrique","Asymétrique"], variable=var)
+optionmenu_1 = customtkinter.CTkOptionMenu(master=utility_frame, values=["Symétrique","Hybride / Asymétrique"], variable=var)
 optionmenu_1.pack(pady=12, padx=10, side=tk.TOP)
 
 optionmenu_2 = None
