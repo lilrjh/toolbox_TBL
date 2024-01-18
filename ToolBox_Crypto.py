@@ -7,7 +7,9 @@ from cryptography.fernet import Fernet
 import json
 import os
 from tkinter import filedialog
-
+from Crypto.Cipher import DES
+from Crypto.Random import get_random_bytes
+from passlib.hash import pbkdf2_sha256
 
 
 def show_frame(frame):
@@ -30,19 +32,19 @@ def signup():
     username = entry1.get()
     password = entry2.get()
     confirmation = entry3.get()
-    print("| Username : ", username,"| ", " | Password : ", password, " | Confirmation : ", confirmation)
 
     if password == confirmation:
+        hashed_password = pbkdf2_sha256.hash(password)  
         with open("output.txt", "a") as file:
             file.write(f"Username: {username}\n")
-            file.write(f"Password: {password}\n\n")
+            file.write(f"Password: {hashed_password}\n\n")
+        messagebox.showinfo("Succès", "Inscription réussie!")
     else:
         messagebox.showerror("Erreur", "Le mot de passe et la confirmation ne correspondent pas.")
 
     entry1.delete(0, 'end')
     entry2.delete(0, 'end')
     entry3.delete(0, 'end')
-
 
 
 def login():
@@ -55,7 +57,6 @@ def login():
         if os.path.exists(CREDENTIALS_FILE):
             os.remove(CREDENTIALS_FILE)
 
-
     button3.configure(state="disabled")
 
     with open("output.txt", "r") as file:
@@ -65,19 +66,19 @@ def login():
         while i < len(lines):
             if len(lines[i].strip().split(": ")) > 1:
                 stored_username = lines[i].strip().split(": ")[1]
-                if i+1 < len(lines) and len(lines[i+1].strip().split(": ")) > 1:
-                    stored_password = lines[i+1].strip().split(": ")[1]
+                if i + 1 < len(lines) and len(lines[i + 1].strip().split(": ")) > 1:
+                    stored_password = lines[i + 1].strip().split(": ")[1]
                     credentials[stored_username] = stored_password
-                    i += 2  
+                    i += 2
                 else:
-                    i += 1  
+                    i += 1
             else:
-                i += 1  
+                i += 1
 
-    if username in credentials and credentials[username] == password:
+    if username in credentials and pbkdf2_sha256.verify(password, credentials[username]):
         print("Login successful!")
         button3.configure(state="normal")
-        show_frame(utility_frame)  
+        show_frame(utility_frame)
     else:
         messagebox.showerror("Erreur", "Identifiant ou Mot de passe incorrect.")
         button3.configure(state="normal")
@@ -96,7 +97,7 @@ def update_options(*args):
     elif var.get() == "Asymétrique":
         optionmenu_2 = customtkinter.CTkOptionMenu(master=utility_frame, values=["RSA", "RH"])
     if optionmenu_2 is not None:
-        optionmenu_2.pack(pady = 5, side=tk.TOP)
+        optionmenu_2.pack(pady=5, side=tk.TOP)
 
 
 
@@ -159,48 +160,144 @@ def load_credentials():
         entry4.insert(0, credentials["username"])
         entry5.insert(0, credentials["password"])
 
-def chiffrement():
-    def load_key():
-        try:
-            with open('fernet_key_folder.key', 'rb') as key_file:
-                key = key_file.read()
-                return key
-        except FileNotFoundError:
-            print("La clé Fernet n'a pas été trouvée.")
-            return None
+def load_des_key():
+    key_path = 'des_key_file.key'
 
-    key = load_key()
-    if key is None:
-        print("La clé Fernet est nécessaire pour le chiffrement.")
+    try:
+        with open(key_path, 'rb') as key_file:
+            key = key_file.read()
+    except FileNotFoundError:
+        print("La clé DES n'a pas été trouvée. Génération d'une nouvelle clé.")
+        key = get_random_bytes(8)
+        with open(key_path, 'wb') as new_key_file:
+            new_key_file.write(key)
+
+    return key
+
+key_des = load_des_key()
+if key_des is None:
+    print("La clé DES est nécessaire pour le déchiffrement.")
+else:
+    cipher_des = DES.new(key_des, DES.MODE_ECB)
+
+
+def chiffrement_des():
+    root = tk.Tk()
+    root.withdraw()
+
+    folder_path = filedialog.askdirectory()
+
+    key_des = load_des_key()
+    if key_des is None:
+        print("La clé DES est nécessaire pour le chiffrement.")
+        return
+
+    cipher_des = DES.new(key_des, DES.MODE_ECB)
+
+    if folder_path:
+        files = os.listdir(folder_path)
+        print(files)
+
+        for file in files:
+            file_path = os.path.join(folder_path, file)
+
+            if os.path.isfile(file_path):
+                with open(file_path, 'rb') as file:
+                    original = file.read()
+
+                original += b'\0' * (8 - len(original) % 8)
+
+                encrypted = cipher_des.encrypt(original)
+
+                with open(file_path, 'wb') as enc_file:
+                    enc_file.write(encrypted)
+
+                print(f"{file_path} a été chiffré avec DES.")
     else:
-        fernet = Fernet(key)
+        print("Aucun dossier n'a été sélectionné.")
 
-        root = tk.Tk()
-        root.withdraw()  
 
-        folder_path = filedialog.askdirectory()  
+def dechiffrement_des():
+    root = tk.Tk()
+    root.withdraw()
 
-        if folder_path:
-            files = os.listdir(folder_path)
-            print(files)
+    folder_path = filedialog.askdirectory()
 
-            for file in files:
-                file_path = os.path.join(folder_path, file)
+    key_des = load_des_key()
+    if key_des is None:
+        print("La clé DES est nécessaire pour le déchiffrement.")
+        return
 
-                if os.path.isfile(file_path):
-                    with open(file_path, 'rb') as file:
-                        original = file.read()
+    cipher_des = DES.new(key_des, DES.MODE_ECB)
 
-                    encrypted = fernet.encrypt(original)
+    if folder_path:
+        files = os.listdir(folder_path)
+        print(files)
 
-                    with open(file_path, 'wb') as enc_file:
-                        enc_file.write(encrypted)
+        for file in files:
+            file_path = os.path.join(folder_path, file)
 
-                    print(f"{file_path} a été chiffré.")
-        else:
-            print("Aucun dossier n'a été sélectionné.")
+            if os.path.isfile(file_path):
+                with open(file_path, 'rb') as encrypted_file:
+                    enc_data = encrypted_file.read()
 
-def dechiffrement():
+                decrypted = cipher_des.decrypt(enc_data)
+
+                decrypted = decrypted.rstrip(b'\0')
+
+                with open(file_path, 'wb') as decrypted_file:
+                    decrypted_file.write(decrypted)
+
+                print(f"{file_path} a été déchiffré avec DES.")
+    else:
+        print("Aucun dossier n'a été sélectionné.")
+
+
+
+
+
+def chiffrement_aes():
+            def load_key():
+                try:
+                    with open('fernet_key_folder.key', 'rb') as key_file:
+                        key = key_file.read()
+                        return key
+                except FileNotFoundError:
+                    print("La clé Fernet n'a pas été trouvée.")
+                    return None
+
+            key = load_key()
+            if key is None:
+                print("La clé Fernet est nécessaire pour le déchiffrement.")
+            else:
+                fernet = Fernet(key)
+
+            root = tk.Tk()
+            root.withdraw()  
+
+            folder_path = filedialog.askdirectory()  
+
+            if folder_path:
+                files = os.listdir(folder_path)
+                print(files)
+
+                for file in files:
+                    file_path = os.path.join(folder_path, file)
+
+                    if os.path.isfile(file_path):
+                        with open(file_path, 'rb') as file:
+                            original = file.read()
+
+                        encrypted = fernet.encrypt(original)
+
+                        with open(file_path, 'wb') as enc_file:
+                            enc_file.write(encrypted)
+
+                        print(f"{file_path} a été chiffré.")
+            else:
+                print("Aucun dossier n'a été sélectionné.")
+
+def dechiffrement_aes():
     def load_key():
         try:
             with open('fernet_key_folder.key', 'rb') as key_file:
@@ -241,8 +338,33 @@ def dechiffrement():
         else:
             print("Aucun dossier n'a été sélectionné.")
 
+def chiffrement():
+    selected_algorithm = var.get()
 
+    if selected_algorithm == "Symétrique":
+        if optionmenu_2.get() == "AES":
+            chiffrement_aes()
+        elif optionmenu_2.get() == "DES":
+            chiffrement_des()
+    elif selected_algorithm == "Asymétrique":
+        if optionmenu_2.get() == "RSA":
+            print("RTCYVUIJ")
+        elif optionmenu_2.get() == "RH":
+            print("Chiffrement RH")
 
+def dechiffrement():
+    selected_algorithm = var.get()
+
+    if selected_algorithm == "Symétrique":
+        if optionmenu_2.get() == "AES":
+            dechiffrement_aes()
+        elif optionmenu_2.get() == "DES":
+            dechiffrement_des()
+    elif selected_algorithm == "Asymétrique":
+        if optionmenu_2.get() == "RSA":
+            print("dechiffrement")
+        elif optionmenu_2.get() == "RH":
+            print("Déchiffrement RH")
 
 initial_frame = customtkinter.CTkFrame(master=root)
 initial_frame.grid(row=0, column=0, sticky='news')
