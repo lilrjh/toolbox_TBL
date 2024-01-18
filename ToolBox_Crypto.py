@@ -342,15 +342,31 @@ def dechiffrement_aes():
 
 
 def generate_rsa_keys():
-    key = RSA.generate(2048)
-    private_key = key.export_key()
-    public_key = key.publickey().export_key()
+    private_key_path = 'private.pem'
+    public_key_path = 'public.pem'
 
-    with open('private.pem', 'wb') as private_file:
-        private_file.write(private_key)
+    try:
+        # Tentative de charger les clés existantes
+        with open(private_key_path, 'rb') as private_file:
+            private_key = RSA.import_key(private_file.read())
 
-    with open('public.pem', 'wb') as public_file:
-        public_file.write(public_key)
+        with open(public_key_path, 'rb') as public_file:
+            public_key = RSA.import_key(public_file.read())
+    except FileNotFoundError:
+        # Si les clés n'existent pas, générez-les
+        key = RSA.generate(2048)
+        private_key = key.export_key()
+        public_key = key.publickey().export_key()
+
+        # Sauvegarde des clés générées
+        with open(private_key_path, 'wb') as private_file:
+            private_file.write(private_key)
+
+        with open(public_key_path, 'wb') as public_file:
+            public_file.write(public_key)
+
+    return private_key, public_key
+
 
 def load_rsa_keys():
     private_key_path = 'private.pem'
@@ -366,7 +382,9 @@ def load_rsa_keys():
         return private_key, public_key
     except FileNotFoundError:
         print("Les clés RSA n'ont pas été trouvées.")
-        return None, None
+        generate_rsa_keys()
+        return
+load_rsa_keys()
 
 def generate_symmetric_key():
     return Fernet.generate_key()
@@ -407,9 +425,6 @@ def hybrid_encryption():
     folder_path = filedialog.askdirectory()
     private_key, public_key = load_rsa_keys()
 
-    if private_key is None or public_key is None:
-        print("Les clés RSA sont nécessaires pour le chiffrement. Génération")
-        generate_rsa_keys()
 
     symmetric_key = generate_symmetric_key()
 
