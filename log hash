@@ -1,0 +1,57 @@
+def signup():
+    username = entry1.get()
+    password = entry2.get()
+    confirmation = entry3.get()
+
+    if password == confirmation:
+        hashed_password = pbkdf2_sha256.hash(password)  # Hash du mot de passe
+        with open("output.txt", "a") as file:
+            file.write(f"Username: {username}\n")
+            file.write(f"Password: {hashed_password}\n\n")
+        messagebox.showinfo("Succès", "Inscription réussie!")
+    else:
+        messagebox.showerror("Erreur", "Le mot de passe et la confirmation ne correspondent pas.")
+
+    entry1.delete(0, 'end')
+    entry2.delete(0, 'end')
+    entry3.delete(0, 'end')
+
+
+def login():
+    username = entry4.get()
+    password = entry5.get()
+
+    if checkbox.get():
+        encrypt_credentials(username, password)
+    else:
+        if os.path.exists(CREDENTIALS_FILE):
+            os.remove(CREDENTIALS_FILE)
+
+    button3.configure(state="disabled")
+
+    with open("output.txt", "r") as file:
+        lines = file.readlines()
+        credentials = {}
+        i = 0
+        while i < len(lines):
+            if len(lines[i].strip().split(": ")) > 1:
+                stored_username = lines[i].strip().split(": ")[1]
+                if i + 1 < len(lines) and len(lines[i + 1].strip().split(": ")) > 1:
+                    stored_password = lines[i + 1].strip().split(": ")[1]
+                    credentials[stored_username] = stored_password
+                    i += 2
+                else:
+                    i += 1
+            else:
+                i += 1
+
+    if username in credentials and pbkdf2_sha256.verify(password, credentials[username]):
+        print("Login successful!")
+        button3.configure(state="normal")
+        show_frame(utility_frame)
+    else:
+        messagebox.showerror("Erreur", "Identifiant ou Mot de passe incorrect.")
+        button3.configure(state="normal")
+
+    entry4.delete(0, 'end')
+    entry5.delete(0, 'end')
