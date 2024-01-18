@@ -1,6 +1,0 @@
-Username: titi
-Password: titi
-
-Username: titi
-Password: $pbkdf2-sha256$29000$1Lq3thYCIEQIwbh3bi0lhA$38SUt2MM4lsj1f7mEretzssKQ.Sdn23yxxumI.G4RM0
-
