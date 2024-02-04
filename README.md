@@ -4,11 +4,11 @@ Il s'agit d'une application Python qui propose une interface utilisateur utilisa
 
 ## Fonctionnalités
 
-- **Authentification des Utilisateurs :** Permet aux utilisateurs de s'inscrire avec un nom d'utilisateur et un mot de passe, et de se connecter de manière sécurisée.
+- **Authentification des utilisateurs :** Permet aux utilisateurs de s'inscrire avec un nom d'utilisateur et un mot de passe, et de se connecter de manière sécurisée.
 
-- **Stockage des Mots de Passe :** Hashes et stocke les mots de passe en utilisant l'algorithme PBKDF2.
+- **Stockage des mots de passe :** Hashes et stocke les mots de passe en utilisant l'algorithme PBKDF2.
 
-- **Cryptage/Décryptage de Fichiers :** Prend en charge les algorithmes de cryptage symétrique (AES, DES), asymétrique (RSA) et hybride (RSA / AES).
+- **Chriffrement/Déchiffrement de fichiers :** Prend en charge les algorithmes de chiffrements symétriques (AES, DES), asymétrique (RSA) et hybride (RSA / AES).
 
 ## Premiers Pas
 
@@ -25,7 +25,7 @@ Il s'agit d'une application Python qui propose une interface utilisateur utilisa
 ### Installation
 
 1. Clonez le dépôt : `git clone https://github.com/lilrjh/cryptographie`
-2. Accédez au répertoire du projet : `cd application-cryptage`
+2. Accédez au répertoire du projet : `cd cryptographie`
 3. Installez les dépendances requises : `pip install -r requirements.txt`
 
 ### Utilisation
