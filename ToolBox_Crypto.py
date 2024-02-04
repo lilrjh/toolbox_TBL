@@ -30,10 +30,24 @@ def update_options():
 
 
 
+
+def is_valid_password(password):
+    return (
+        len(password) >= 8 and
+        any(char.isdigit() for char in password) and
+        any(char.isupper() for char in password) and
+        any(char.islower() for char in password) and
+        any(char.isalnum() or char in "!@#$%^&*()-_+=<>,.?/:;{}[]|'" for char in password)
+    )
+
 def signup():
     username = entry1.get()
     password = entry2.get()
     confirmation = entry3.get()
+
+    if not is_valid_password(password):
+        messagebox.showerror("Erreur", "Le mot de passe ne respecte pas les critères de sécurité.")
+        return
 
     if password == confirmation:
         hashed_password = pbkdf2_sha256.hash(password)  
@@ -47,6 +61,7 @@ def signup():
     entry1.delete(0, 'end')
     entry2.delete(0, 'end')
     entry3.delete(0, 'end')
+
 
 
 def login():
@@ -259,15 +274,6 @@ def dechiffrement_des():
 
 
 def chiffrement_aes():
-            def load_key():
-                try:
-                    with open('fernet_key_folder.key', 'rb') as key_file:
-                        key = key_file.read()
-                        return key
-                except FileNotFoundError:
-                    print("La clé Fernet n'a pas été trouvée.")
-                    return None
-
             key = load_key()
             if key is None:
                 print("La clé Fernet est nécessaire pour le déchiffrement.")
