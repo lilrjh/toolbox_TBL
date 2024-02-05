@@ -6,7 +6,7 @@ Il s'agit d'une application Python qui propose une interface utilisateur utilisa
 
 - **Authentification des utilisateurs :** Permet aux utilisateurs de s'inscrire avec un nom d'utilisateur et un mot de passe, et de se connecter de manière sécurisée.
 
-- **Stockage des mots de passe :** Hashes et stocke les mots de passe en utilisant l'algorithme PBKDF2.
+- **Stockage des mots de passe :** Hashes et stocke les mots de passe en utilisant l'algorithme SHA 256.
 
 - **Chriffrement/Déchiffrement de fichiers :** Prend en charge les algorithmes de chiffrements symétriques (AES, DES), asymétrique (RSA) et hybride (RSA / AES).
 
