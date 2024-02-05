@@ -1,4 +1,4 @@
-# Tool Box Crypto
+# Tool Box TBL
 
 Il s'agit d'une application Python qui propose une interface utilisateur utilisant un système d'authentification,et la possibilité de chiffrer/déchiffrer des fichiers à l'aide de différents algorithmes cryptographiques.
 
@@ -24,8 +24,8 @@ Il s'agit d'une application Python qui propose une interface utilisateur utilisa
 
 ### Installation
 
-1. Clonez le dépôt : `git clone https://github.com/lilrjh/cryptographie`
-2. Accédez au répertoire du projet : `cd cryptographie`
+1. Clonez le dépôt : `git clone https://github.com/lilrjh/toolbox_TBL`
+2. Accédez au répertoire du projet : `cd toolbox_TBL`
 3. Installez les dépendances requises : `pip install -r requirements.txt`
 
 ### Utilisation
